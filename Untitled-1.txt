@@ -1,4 +1,0 @@
-Target aquistion: Grab hash file
-Candidate Generation: 
-Hashing: Hash potential passwords with the same algorithmn as Target
-Comparison: Compare target adn generated hash
