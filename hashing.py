@@ -33,7 +33,6 @@ def get_word_by_line(wordlist, line_number):
 salt = "mysalt123"
 def salted_hash(password, salt):
     salted = salt + password
-    print(f"Salting: '{salt}' + '{password}' = '{salted}'")
     return hashlib.sha256(salted.encode()).hexdigest()
 
 def dictionary_attack_salted(hash_to_crack, salt, wordlist, start=0):
@@ -67,24 +66,24 @@ parser.add_argument("--line", type=int, default=None,
                     help="1-based line number from the wordlist to choose and hash")
 parser.add_argument("--salt", type=str, default="mysalt123",
                     help="Salt value to use when hashing the chosen password")
+parser.add_argument("--iterations", type=int, default=1,
+                    help="Number of SHA256 iterations to apply to the salted hash")
 args = parser.parse_args()
 
 if args.line is not None:
     selected_password = get_word_by_line(wordlist, args.line)
     if selected_password is None:
-        raise SystemExit(f"Line {args.line} does not exist in {wordlist}")
+        print(f"Could not find line")
 
+    plain_hash = sha256_hash(selected_password)
     hash_target = salted_hash(selected_password, args.salt)
-   # print(f"Selected line: {args.line}")
-   # print(f"Password: {selected_password}")
-   # print(f"Salt: {args.salt}")
+    iterative_hash_value = iterated_hash(hash_target, args.iterations)
 
+    print(f"Selected line: {args.line}")
+    print(f"Password: {selected_password}")
+    print(f"Plain SHA256: {plain_hash}")
+    print(f"Salt: {args.salt}")
+    print(f"Salted SHA256: {hash_target}")
+    # print(f"Iterated hash ({args.iterations} rounds on salted hash): {iterative_hash_value}")
+    print(f"Iterated hash: {iterative_hash_value}")
 
-
-    result = dictionary_attack_salted(hash_target, args.salt, wordlist, start=args.start)
-    if result:
-        print(f"Found password: {result}")
-        print(f"Found hash: {hash_target}")
-        print(f"Found salt: {args.salt}")
-    else:
-        print("Password not found")
