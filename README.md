@@ -1,2 +1,142 @@
-# PswrdGuesser
-# use python hashing.py --line "insert number" --salt "insert word" --iterations "number"
+```
+------------------------------------------------------------------------------
+
+:::::::::   ::::::::  :::       ::: :::::::::  :::::::::                      
+:+:    :+: :+:    :+: :+:       :+: :+:    :+: :+:    :+:                     
++:+    +:+ +:+        +:+       +:+ +:+    +:+ +:+    +:+                     
++#++:++#+  +#++:++#++ +#+  +:+  +#+ +#++:++#:  +#+    +:+                     
++#+               +#+ +#+ +#+#+ +#+ +#+    +#+ +#+    +#+                     
+#+#        #+#    #+#  #+#+# #+#+#  #+#    #+# #+#    #+#                     
+###         ########    ###   ###   ###    ### #########                      
+ ::::::::  :::::::::      :::      ::::::::  :::    ::: :::::::::: :::::::::  
+:+:    :+: :+:    :+:   :+: :+:   :+:    :+: :+:   :+:  :+:        :+:    :+: 
++:+        +:+    +:+  +:+   +:+  +:+        +:+  +:+   +:+        +:+    +:+ 
++#+        +#++:++#:  +#++:++#++: +#+        +#++:++    +#++:++#   +#++:++#:  
++#+        +#+    +#+ +#+     +#+ +#+        +#+  +#+   +#+        +#+    +#+ 
+#+#    #+# #+#    #+# #+#     #+# #+#    #+# #+#   #+#  #+#        #+#    #+# 
+ ########  ###    ### ###     ###  ########  ###    ### ########## ###    ###      
+                                       
+------------------------------------------------------------------------------
+Cyber 310 project
+```
+# PswrdCracker
+PswrdCracker is a simple tool that encrypts and decrypts hash and password files in sha256
+
+
+
+
+# Arguments and usage
+
+
+## Modes
+There are two modes within PswrdCracker
+within each of these modes there are multiple sub arguments
+
+### Cracking mode
+``` python
+python cracker.py -cf 
+```
+### Hashing mode
+``` python
+python cracker.py -hf
+```
+
+
+### Dictionary attack
+``` python
+python cracker.py -cf -d 
+```
+### Iterated dictionary attack
+``` python
+python cracker.py -cf -id 
+```  
+### Salted dictionary attack
+``` python
+python cracker.py -cf -sd 
+```
+### Brute force attack
+``` python
+python cracker.py -cf -b 
+```
+### Start
+skip this many passwords before starting the attack
+``` python
+python cracker.py -cf -start 'int here'
+```
+
+### SHA256 hashing
+``` python
+python cracker.py -hf -nh 
+```
+### Iterated hashing
+``` python
+python cracker.py -hf -ih 
+```
+### Salted hashing
+``` python
+python cracker.py -hf -sh
+```
+### Iterations
+Number of SHA256 iterations to apply to the salted hash
+``` python
+python cracker.py -hf -ih -it 'int here'
+```
+### Salt
+Salt value used
+``` python
+python cracker.py -hf -sh -salt 'string here'
+```
+
+### Run time
+Displays time to run
+``` python
+python cracker.py -hf -nh -t
+```
+
+### Write to file
+enable writing to file default values are passwords.txt and hashes.txt
+``` python
+python cracker.py -hf -nh -w
+```
+### Read from file
+Read from input file path
+``` python
+python cracker.py -hf -nh -i passwords.txt
+```
+
+### Output to file
+Output file path
+``` python
+python cracker.py -hf -nh -o hashes.txt
+```
+
+## Examples
+
+### Hashing a password file aswell as displaying runtime
+``` python
+python cracker.py -hf -nh -i passwords.txt -t
+
+e150a1ec81e8e93e1eae2c3a77e66ec6dbd6a3b460f89c1d08aecf422ee401a0
+ba22bae4d286f37a07e800585b8acba09add0e2a370c6ea5b2b354f859d8c12d
+6beb82a31d6ce0484b07da04008f9d125f6787282f43b09d1410d9ee90067ef4
+5189e2526a675b1c1d8d1824d0131256c26e9ac17d6f0f9cdc1c6cbd06a5ad99
+6e91b0b68ce86d0cc040d042cd319faf78621ab74f82cce01c8615b159522b62
+5ad5ea6e723ad4978ebc8cf5401e0defc5fdcb8889cd28568870594757f65497
+40e3739e9234a302e72d4a792958ccbccfb506d624d9ca3091498cc6dd4f9e2b
+22ae351c606dfb96d54772de6573db28201501a547d228dac9c77e949cc22d34
+9864db9a7122c0f03c5344675439d59d5c97b37c045870387e860ad8defd8c87
+80d7e33b0ef9bde4036fc01f17f0bcc1882ece7adac1c42f14f005da1ebf56a0
+a9cbbe874670e3f7c9fa8e58874a1bfb1dc482e0ccc68db8cc6157cfa7fb4343
+2baa759eaa2e8c81463fbbaf3ba77c299c6c00a9f71dbb99dd4fad2968c3fbd3
+time to run: 0.011076688766479492 seconds
+```
+
+### Hashing a password file and saving it to hashedpswrds.txt
+``` python
+python cracker.py -hf -nh -i passwords.txt -w -o hashedpswrds.txt
+
+Hashes saved to hashedpswrds.txt
+```
+
+
+
