@@ -139,7 +139,7 @@ def sha256_hash(input_file):            # normal sha256 hashinh -nh
     hashed = []
     with open(input_file, "r") as f:
         for line in f:
-            hashes = hashlib.sha256(line.encode()).hexdigest()
+            hashes = hashlib.sha256(line.strip().encode()).hexdigest()
             hashed.append(hashes)
     return hashed
 
@@ -181,7 +181,7 @@ if args.cf:
             result = brute_force_attack(file, wordlist, args.start)
 
     else:
-        print("Choose an attack: -d, -id, -b, or -sd")
+        print("Choose an attack: -d, -id, -sd, or -b")
         raise SystemExit
     if result:
         output= "\n".join(result)
@@ -193,7 +193,7 @@ if args.cf:
             with open(output_file, "w") as f:
                 f.write(output + "\n")
                 print(f"Passwords saved to {output_file}")
-
+        else:
             with open("passwords.txt", "w") as f:
                 f.write(output + "\n")
                 print("Passwords saved to passwords.txt")
