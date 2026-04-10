@@ -96,12 +96,12 @@ def iterated_dictionary_attack(file, wordlist, start): # broken iterated diction
                     continue
                 salt_hex = parts[0]
                 stored_hash = parts[1]
-
                 salt = bytes.fromhex(salt_hex)
                 hashed = hashlib.sha256(salt + word.encode()).hexdigest()
-                
-            if hashed == stored_hash:
-                found.append(word)
+                for j in range(10000):
+                    hashed = hashlib.sha256(hashed.encode()).hexdigest()    
+                if hashed == stored_hash:
+                    found.append(word)
     return found
     
 
@@ -114,6 +114,8 @@ def salted_dictionary_attack(file, wordlist, start): # broken salted dictionary 
             word = word.strip()
             for line in file:
                 parts = line.split(":")
+                if len(parts) != 2:
+                    continue
                 salt_hex = parts[0]
                 stored_hash = parts[1]
                 salt = bytes.fromhex(salt_hex)
@@ -122,20 +124,22 @@ def salted_dictionary_attack(file, wordlist, start): # broken salted dictionary 
                     found.append(word)
     return found
 
-def brute_force_attack(hash_to_crack, max_length=4): # Brute force attack -b
+def brute_force_attack(file, wordlist, start): # Brute force attack -b
+    found = []
     chars = string.ascii_lowercase + string.digits
-
-    for length in range(1, max_length + 1):
-        for guess in itertools.product(chars, repeat=length):
-            guess = ''.join(guess)
-            if sha256_hash(guess) == hash_to_crack:
-                return guess
-    return None
+    for hash in file:
+        for length in range(1, 5):
+            for guess in itertools.product(chars, repeat=length):
+                guess_str = ''.join(guess)
+                hashed_guess = hashlib.sha256(guess_str.encode()).hexdigest()
+                if hashed_guess == hash:
+                    found.append(guess_str)
+    return found
 
 #############################
 # Hashing
 #############################
-def sha256_hash(input_file):            # normal sha256 hashinh -nh 
+def sha256_hash(input_file):            # normal sha256 hashing -nh 
     hashed = []
     with open(input_file, "r") as f:
         for line in f:
@@ -150,7 +154,7 @@ def iterated_hash(input_file, iterations):  # iterated sha 256 hashing -ih
             result = line.strip()
             for _ in range(iterations):                                 #!!! issue: repeats each iteration instead of displaying final value
                 result = hashlib.sha256(result.encode()).hexdigest() 
-                hashed.append(result)
+            hashed.append(result)
     return hashed
 
 
@@ -201,7 +205,7 @@ if args.cf:
         print(output)
 
 
-elif args.hf:           # Hashinh mode, takes results of choosen hash function and outputs them to terminal or a file if -w is used as an argument
+elif args.hf:           # Hashing mode, takes results of choosen hash function and outputs them to terminal or a file if -w is used as an argument
     
     if args.nh:
         result = sha256_hash(input_file)
