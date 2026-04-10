@@ -98,9 +98,8 @@ def iterated_dictionary_attack(file, wordlist, start): # broken iterated diction
                 stored_hash = parts[1]
 
                 salt = bytes.fromhex(salt_hex)
-                hashed = hashlib.sha256(salt + word.encode()).hexdigest()
-                
-            if hashed == stored_hash:
+                hashed = hashlib.sha256(salt + word.encode()).hexdigest()           
+                if hashed == stored_hash:
                 found.append(word)
     return found
     
@@ -114,6 +113,8 @@ def salted_dictionary_attack(file, wordlist, start): # broken salted dictionary 
             word = word.strip()
             for line in file:
                 parts = line.split(":")
+                if len(parts) !=2:
+                    continue
                 salt_hex = parts[0]
                 stored_hash = parts[1]
                 salt = bytes.fromhex(salt_hex)
@@ -122,15 +123,16 @@ def salted_dictionary_attack(file, wordlist, start): # broken salted dictionary 
                     found.append(word)
     return found
 
-def brute_force_attack(hash_to_crack, max_length=4): # Brute force attack -b
+def brute_force_attack(hashes, max_length=4): # Brute force attack -b
     chars = string.ascii_lowercase + string.digits
-
+    found = []
     for length in range(1, max_length + 1):
         for guess in itertools.product(chars, repeat=length):
             guess = ''.join(guess)
-            if sha256_hash(guess) == hash_to_crack:
-                return guess
-    return None
+            hashed = hashlib.sha256(guess.encode()).hexdigest()
+            if hashed in hashes:
+                found.append(guess)
+    return found
 
 #############################
 # Hashing
@@ -148,9 +150,9 @@ def iterated_hash(input_file, iterations):  # iterated sha 256 hashing -ih
     with open(input_file, "r") as f:
         for line in f:
             result = line.strip()
-            for _ in range(iterations):                                 #!!! issue: repeats each iteration instead of displaying final value
-                result = hashlib.sha256(result.encode()).hexdigest() 
-                hashed.append(result)
+            for _ in range(iterations):
+                result = hashlib.sha256(result.encode()).hexdigest()
+            hashed.append(result)
     return hashed
 
 
@@ -158,7 +160,7 @@ def salted_hash(input_file, salt): # salted sha256 hashing -sh
     hashed = []
     with open(input_file, "r") as f:
         for line in f:
-            salted = salt + line
+            salted = salt + line.strip()
             hashes = hashlib.sha256(salted.encode()).hexdigest()
             hashed.append(hashes)
     return hashed
@@ -178,7 +180,7 @@ if args.cf:
     elif args.sd:
             result = salted_dictionary_attack(file, wordlist, args.start)
     elif args.b:
-            result = brute_force_attack(file, wordlist, args.start)
+            result = brute_force_attack(file)
 
     else:
         print("Choose an attack: -d, -id, -sd, or -b")
@@ -210,7 +212,7 @@ elif args.hf:           # Hashinh mode, takes results of choosen hash function a
     elif args.sh:
         result = salted_hash(input_file, salt)
     else:
-        print("Choose a hashing mode: -nh, -h, or -sh")
+        print("Choose a hashing mode: -nh, -ih, or -sh")
         raise SystemExit
     if result:
         output="\n".join(result)
