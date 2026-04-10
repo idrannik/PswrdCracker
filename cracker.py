@@ -124,7 +124,7 @@ def salted_dictionary_attack(file, wordlist, start): # broken salted dictionary 
                     found.append(word)
     return found
 
-def brute_force_attack(file, wordlist, start): # Brute force attack -b
+def brute_force_attack(hashes, max_length=4): # Brute force attack -b
     found = []
     chars = string.ascii_lowercase + string.digits
     for hash in file:
