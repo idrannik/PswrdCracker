@@ -162,7 +162,7 @@ def salted_hash(input_file, salt): # salted sha256 hashing -sh
     hashed = []
     with open(input_file, "r") as f:
         for line in f:
-            salted = salt + line
+            salted = salt + line.strip()
             hashes = hashlib.sha256(salted.encode()).hexdigest()
             hashed.append(hashes)
     return hashed
@@ -182,7 +182,7 @@ if args.cf:
     elif args.sd:
             result = salted_dictionary_attack(file, wordlist, args.start)
     elif args.b:
-            result = brute_force_attack(file, wordlist, args.start)
+            result = brute_force_attack(file)
 
     else:
         print("Choose an attack: -d, -id, -sd, or -b")
@@ -214,7 +214,7 @@ elif args.hf:           # Hashing mode, takes results of choosen hash function a
     elif args.sh:
         result = salted_hash(input_file, salt)
     else:
-        print("Choose a hashing mode: -nh, -h, or -sh")
+        print("Choose a hashing mode: -nh, -ih, or -sh")
         raise SystemExit
     if result:
         output="\n".join(result)
