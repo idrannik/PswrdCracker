@@ -5,6 +5,7 @@ import itertools
 import string
 
 wordlist = "rockyousmall.txt"
+# wordlist = "passwords.txt"
 
 start_time = time.time()   
 def show_time(start_time):
@@ -127,12 +128,12 @@ def salted_dictionary_attack(file, wordlist, start): # broken salted dictionary 
 def brute_force_attack(hashes, max_length=4): # Brute force attack -b
     found = []
     chars = string.ascii_lowercase + string.digits
-    for hash in file:
-        for length in range(1, 5):
+    for hash_value in hashes:
+        for length in range(1, max_length + 1):
             for guess in itertools.product(chars, repeat=length):
                 guess_str = ''.join(guess)
                 hashed_guess = hashlib.sha256(guess_str.encode()).hexdigest()
-                if hashed_guess == hash:
+                if hashed_guess == hash_value:
                     found.append(guess_str)
     return found
 
@@ -188,9 +189,12 @@ if args.cf:
         print("Choose an attack: -d, -id, -sd, or -b")
         raise SystemExit
     if result:
-        output= "\n".join(result)
+        if args.d:
+            output = "Dictionary attack successful! Cracked password(s):\n" + "\n".join(result)
+        else:
+            output = "Attack successful!\n" + "\n".join(result)
     else: 
-        output=f"**Attack Failed**"
+        output = "**Attack Failed**"
 
     if args.w:
         if args.o:
