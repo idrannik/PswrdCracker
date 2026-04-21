@@ -46,7 +46,7 @@ parser.add_argument("-salt", type=str, default="mysalt123", help="Salt value to 
 
 args = parser.parse_args()
 
-salt = "mysalt123"
+salt = args.salt
 iterations = args.it
 
 output_file = args.o # Output file of hash or attack inputed through -o argument
@@ -70,71 +70,92 @@ def get_word_by_line(wordlist, line_number):
 #############################
 # Attacks                           #!!! issues: sorts outputs out of order because they are based on the wordlist. also does not mention if a password was not able to be cracked.
 #############################
-def dictionary_attack(file, wordlist, start): # dictionary attack -d
-    found = []
+def dictionary_attack(hashes, wordlist, start): # dictionary attack -d
+    cracked = {}
+    remaining = set(hashes)
     with open(wordlist, "r") as f:
         for i, word in enumerate(f):
+            if not remaining:
+                break
             if i < start:
                 continue
             word = word.strip()
-            hash_word = hashlib.sha256(word.encode()).hexdigest()  
-            if hash_word in file:
-                found.append(word)
-    return found
+            hash_word = hashlib.sha256(word.encode()).hexdigest()
+            if hash_word in remaining:
+                cracked[hash_word] = word
+                remaining.discard(hash_word)
+    return cracked
 
-def iterated_dictionary_attack(file, wordlist, start): # broken iterated dictionary attack -id  
-    found = []
-    with open (wordlist, "r") as f:
+def iterated_dictionary_attack(hashes, wordlist, start, iterations): # iterated dictionary attack -id
+    cracked = {}
+    by_salt = {}            # salt_hex -> { stored_hash: line }
+    for line in hashes:
+        parts = line.split(":")
+        if len(parts) != 2:
+            continue
+        salt_hex, stored_hash = parts
+        by_salt.setdefault(salt_hex, {})[stored_hash] = line
+    remaining_by_salt = {s: set(d.keys()) for s, d in by_salt.items()}
+    total = sum(len(d) for d in by_salt.values())
+    with open(wordlist, "r") as f:
         for i, word in enumerate(f):
+            if len(cracked) == total:
+                break
             if i < start:
                 continue
-            word = word.strip()
-
-            for line in file:
-                parts = line.split(":")
-                if len(parts) !=2:
+            word_bytes = word.strip().encode()
+            for salt_hex, remaining in remaining_by_salt.items():
+                if not remaining:
                     continue
-                salt_hex = parts[0]
-                stored_hash = parts[1]
-                salt = bytes.fromhex(salt_hex)
-                hashed = hashlib.sha256(salt + word.encode()).hexdigest()
-                for j in range(10000):
-                    hashed = hashlib.sha256(hashed.encode()).hexdigest()    
-                if hashed == stored_hash:
-                    found.append(word)
-    return found
-    
+                salt_bytes = bytes.fromhex(salt_hex)
+                h = hashlib.sha256(salt_bytes + word_bytes).hexdigest()
+                for _ in range(iterations):
+                    h = hashlib.sha256(h.encode()).hexdigest()
+                if h in remaining:
+                    cracked[by_salt[salt_hex][h]] = word.strip()
+                    remaining.discard(h)
+    return cracked
 
-def salted_dictionary_attack(file, wordlist, start): # broken salted dictionary attack -sd
-    found = []
-    with open (wordlist,"r") as f:
+
+def salted_dictionary_attack(hashes, wordlist, start): # salted dictionary attack -sd
+    cracked = {}
+    entries = []
+    for line in hashes:
+        parts = line.split(":")
+        if len(parts) != 2:
+            continue
+        entries.append((line, bytes.fromhex(parts[0]), parts[1]))
+    with open(wordlist, "r") as f:
         for i, word in enumerate(f):
+            if len(cracked) == len(entries):
+                break
             if i < start:
                 continue
             word = word.strip()
-            for line in file:
-                parts = line.split(":")
-                if len(parts) != 2:
+            for line, salt_bytes, stored_hash in entries:
+                if line in cracked:
                     continue
-                salt_hex = parts[0]
-                stored_hash = parts[1]
-                salt = bytes.fromhex(salt_hex)
-                hashed_guess = hashlib.sha256(salt + word.encode()).hexdigest()
+                hashed_guess = hashlib.sha256(salt_bytes + word.encode()).hexdigest()
                 if hashed_guess == stored_hash:
-                    found.append(word)
-    return found
+                    cracked[line] = word
+    return cracked
 
-def brute_force_attack(hashes, max_length=4): # Brute force attack -b
-    found = []
+def brute_force_attack(hashes, max_length=5): # Brute force attack -b
+    cracked = {}
+    remaining = set(hashes)
     chars = string.ascii_lowercase + string.digits
-    for hash in file:
-        for length in range(1, 5):
-            for guess in itertools.product(chars, repeat=length):
-                guess_str = ''.join(guess)
-                hashed_guess = hashlib.sha256(guess_str.encode()).hexdigest()
-                if hashed_guess == hash:
-                    found.append(guess_str)
-    return found
+    for length in range(1, max_length + 1):
+        if not remaining:
+            break
+        for guess in itertools.product(chars, repeat=length):
+            guess_str = ''.join(guess)
+            hashed_guess = hashlib.sha256(guess_str.encode()).hexdigest()
+            if hashed_guess in remaining:
+                cracked[hashed_guess] = guess_str
+                remaining.discard(hashed_guess)
+                if not remaining:
+                    break
+    return cracked
 
 #############################
 # Hashing
@@ -147,24 +168,29 @@ def sha256_hash(input_file):            # normal sha256 hashing -nh
             hashed.append(hashes)
     return hashed
 
-def iterated_hash(input_file, iterations):  # iterated sha 256 hashing -ih
+def iterated_hash(input_file, iterations, salt):  # iterated sha 256 hashing -ih (salted + iterated, emits salt_hex:hash)
+    salt_bytes = salt.encode()
+    salt_hex = salt_bytes.hex()
     hashed = []
     with open(input_file, "r") as f:
         for line in f:
-            result = line.strip()
-            for _ in range(iterations):                                 #!!! issue: repeats each iteration instead of displaying final value
-                result = hashlib.sha256(result.encode()).hexdigest() 
-            hashed.append(result)
+            pw = line.strip()
+            result = hashlib.sha256(salt_bytes + pw.encode()).hexdigest()
+            for _ in range(iterations):
+                result = hashlib.sha256(result.encode()).hexdigest()
+            hashed.append(f"{salt_hex}:{result}")
     return hashed
 
 
-def salted_hash(input_file, salt): # salted sha256 hashing -sh
+def salted_hash(input_file, salt): # salted sha256 hashing -sh (emits salt_hex:hash)
+    salt_bytes = salt.encode()
+    salt_hex = salt_bytes.hex()
     hashed = []
     with open(input_file, "r") as f:
         for line in f:
-            salted = salt + line.strip()
-            hashes = hashlib.sha256(salted.encode()).hexdigest()
-            hashed.append(hashes)
+            pw = line.strip()
+            h = hashlib.sha256(salt_bytes + pw.encode()).hexdigest()
+            hashed.append(f"{salt_hex}:{h}")
     return hashed
 
 
@@ -178,7 +204,7 @@ if args.cf:
     if args.d:
             result = dictionary_attack(file, wordlist, args.start)
     elif args.id:
-            result = iterated_dictionary_attack(file, wordlist, args.start)
+            result = iterated_dictionary_attack(file, wordlist, args.start, iterations)
     elif args.sd:
             result = salted_dictionary_attack(file, wordlist, args.start)
     elif args.b:
@@ -187,22 +213,24 @@ if args.cf:
     else:
         print("Choose an attack: -d, -id, -sd, or -b")
         raise SystemExit
-    if result:
-        output= "\n".join(result)
-    else: 
-        output=f"**Attack Failed**"
+
+    display_lines = []
+    cracked_pws = []
+    for h in file:
+        if h in result:
+            display_lines.append(f"{h} -> {result[h]}")
+            cracked_pws.append(result[h])
+        else:
+            display_lines.append(f"{h} -> UNCRACKED")
+    display_output = "\n".join(display_lines) if display_lines else "**Attack Failed**"
 
     if args.w:
-        if args.o:
-            with open(output_file, "w") as f:
-                f.write(output + "\n")
-                print(f"Passwords saved to {output_file}")
-        else:
-            with open("passwords.txt", "w") as f:
-                f.write(output + "\n")
-                print("Passwords saved to passwords.txt")
+        with open(output_file, "w") as f:
+            if cracked_pws:
+                f.write("\n".join(cracked_pws) + "\n")
+        print(f"Passwords saved to {output_file} ({len(cracked_pws)}/{len(file)} cracked)")
     else:
-        print(output)
+        print(display_output)
 
 
 elif args.hf:           # Hashing mode, takes results of choosen hash function and outputs them to terminal or a file if -w is used as an argument
@@ -210,7 +238,7 @@ elif args.hf:           # Hashing mode, takes results of choosen hash function a
     if args.nh:
         result = sha256_hash(input_file)
     elif args.ih:
-        result = iterated_hash(input_file, iterations)
+        result = iterated_hash(input_file, iterations, salt)
     elif args.sh:
         result = salted_hash(input_file, salt)
     else:
